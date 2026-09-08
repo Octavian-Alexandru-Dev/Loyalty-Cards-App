@@ -1,0 +1,62 @@
+import { supabase } from '../lib/supabase'
+import { findProfileByUsername } from '../share/api'
+import type { Group, GroupMember } from '../types'
+
+export async function listMyGroups(): Promise<Group[]> {
+  const { data, error } = await supabase.from('groups').select('*').order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createGroup(name: string, ownerId: string): Promise<Group> {
+  const { data: group, error } = await supabase
+    .from('groups')
+    .insert({ name, owner_id: ownerId })
+    .select()
+    .single()
+  if (error) throw error
+
+  const { error: memberError } = await supabase
+    .from('group_members')
+    .insert({ group_id: group.id, user_id: ownerId, role: 'owner' })
+  if (memberError) throw memberError
+
+  return group
+}
+
+export async function deleteGroup(groupId: string) {
+  const { error } = await supabase.from('groups').delete().eq('id', groupId)
+  if (error) throw error
+}
+
+export async function listGroupMembers(groupId: string): Promise<GroupMember[]> {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('joined_at', { ascending: true })
+  if (error) throw error
+
+  const ids = data.map((m) => m.user_id)
+  if (ids.length === 0) return []
+  const { data: profiles, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, username')
+    .in('id', ids)
+  if (profileError) throw profileError
+  const usernames = new Map(profiles.map((p) => [p.id, p.username]))
+
+  return data.map((m) => ({ ...m, username: usernames.get(m.user_id) ?? '?' }))
+}
+
+export async function addGroupMember(groupId: string, username: string) {
+  const profile = await findProfileByUsername(username)
+  if (!profile) throw new Error(`Nessun utente con username "${username}"`)
+  const { error } = await supabase.from('group_members').insert({ group_id: groupId, user_id: profile.id })
+  if (error) throw error
+}
+
+export async function removeGroupMember(groupId: string, userId: string) {
+  const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId)
+  if (error) throw error
+}
