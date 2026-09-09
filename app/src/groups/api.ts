@@ -83,3 +83,18 @@ export async function redeemGroupInvite(token: string) {
   if (error) throw error
   return data as { joined_group_id: string }[]
 }
+
+export async function listGroupInvites(groupId: string): Promise<GroupInvite[]> {
+  const { data, error } = await supabase
+    .from('group_invites')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function deleteGroupInvite(inviteId: string) {
+  const { error } = await supabase.from('group_invites').delete().eq('id', inviteId)
+  if (error) throw error
+}

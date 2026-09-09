@@ -52,11 +52,29 @@ export function useRemoveGroupMember(groupId: string) {
 
 export function useCreateGroupInvite(groupId: string) {
   const { session } = useAuth()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (expiresInHours?: number) => {
       if (!session) throw new Error('Non autenticato')
       return api.createGroupInvite(groupId, session.user.id, expiresInHours)
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-invites', groupId] }),
+  })
+}
+
+export function useGroupInvites(groupId: string) {
+  return useQuery({
+    queryKey: ['group-invites', groupId],
+    queryFn: () => api.listGroupInvites(groupId),
+    enabled: !!groupId,
+  })
+}
+
+export function useDeleteGroupInvite(groupId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (inviteId: string) => api.deleteGroupInvite(inviteId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-invites', groupId] }),
   })
 }
 
