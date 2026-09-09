@@ -30,18 +30,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     let cancelled = false
-    supabase
-      .from('profiles')
-      .select('id, username, created_at')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data }: { data: Profile | null }) => {
-        if (!cancelled) setProfile(data)
-      })
+    fetchProfile(session.user.id).then((data) => {
+      if (!cancelled) setProfile(data)
+    })
     return () => {
       cancelled = true
     }
   }, [session])
+
+  async function fetchProfile(userId: string): Promise<Profile | null> {
+    const { data } = await supabase.from('profiles').select('id, username, created_at').eq('id', userId).single()
+    return data
+  }
+
+  async function refreshProfile() {
+    if (!session) return
+    setProfile(await fetchProfile(session.user.id))
+  }
 
   async function signUp(email: string, password: string, username: string) {
     const { data, error } = await supabase.auth.signUp({
@@ -75,7 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, signUp, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider
+      value={{ session, profile, loading, signUp, signIn, signInWithGoogle, signOut, refreshProfile }}
+    >
       {children}
     </AuthContext.Provider>
   )

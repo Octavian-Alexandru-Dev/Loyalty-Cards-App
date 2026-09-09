@@ -48,6 +48,17 @@ Una riga ogni volta che qualcuno che **non** è il proprietario apre la
 schermata "usa carta" di una carta condivisa con lui. Il proprietario può
 leggere il log delle proprie carte.
 
+### Auto-eliminazione dell'account
+Non è una tabella, ma la funzione `delete_own_account()`: elimina la riga
+dell'utente corrente in `auth.users`. Grazie a `on delete cascade` su tutte
+le foreign key verso `profiles` (a sua volta `on delete cascade` verso
+`auth.users`), la cancellazione si propaga automaticamente a carte, gruppi
+di cui è proprietario, condivisioni, inviti e log — senza bisogno di
+cancellare esplicitamente riga per riga. Anche questa è `SECURITY DEFINER`
+per lo stesso motivo di `redeem_card_invite`/`redeem_group_invite`: un
+utente autenticato non ha di per sé privilegi DELETE su `auth.users`
+(schema gestito da Supabase).
+
 ## Regole di autorizzazione (Row Level Security)
 
 Riassunto delle policy (vedi la migration per il SQL esatto):

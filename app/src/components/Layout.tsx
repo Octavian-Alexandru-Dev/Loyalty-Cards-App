@@ -1,5 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { CreditCard, ScanLine, Users, LogOut } from 'lucide-react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { CreditCard, ScanLine, Users, LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
 import clsx from 'clsx'
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
 
 export function Layout() {
   const { profile, signOut } = useAuth()
+  const navigate = useNavigate()
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -18,6 +19,13 @@ export function Layout() {
         <span className="font-semibold text-slate-900">Carte Fedeltà</span>
         <div className="flex items-center gap-3">
           {profile && <span className="text-sm text-slate-500">@{profile.username}</span>}
+          <button
+            onClick={() => navigate('/account')}
+            aria-label="Account"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          >
+            <Settings size={18} />
+          </button>
           <button
             onClick={() => signOut()}
             aria-label="Esci"

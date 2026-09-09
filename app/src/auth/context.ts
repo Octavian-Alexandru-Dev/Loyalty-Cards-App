@@ -14,6 +14,7 @@ export interface AuthState {
   signIn: (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthState | null>(null)

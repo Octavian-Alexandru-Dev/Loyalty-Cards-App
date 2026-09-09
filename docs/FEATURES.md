@@ -38,6 +38,15 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
 - [x] Log di utilizzo: il proprietario di una carta vede chi, tra le persone
       con cui l'ha condivisa, l'ha aperta e quando
 
+## Incluso — Account
+
+- [x] Modifica dei propri dati (username, email, password)
+- [x] Eliminazione dell'account, su richiesta dell'utente: cancella
+      definitivamente account e dati associati (carte, gruppi di cui è
+      proprietario, condivisioni)
+- [x] Guida in-app per installare l'applicazione sulla schermata Home
+      (iPhone/Safari e Android, più desktop)
+
 ## Incluso — Base PWA (non negoziabile per definizione di "PWA")
 
 - [x] Installabilità (manifest, icone, service worker)
