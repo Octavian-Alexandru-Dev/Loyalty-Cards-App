@@ -1,41 +1,122 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, ScanLine, CreditCard } from 'lucide-react'
+import { Plus, Search, ScanLine, CreditCard, List, LayoutGrid } from 'lucide-react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useCards } from './useCards'
+import { useCardOrder } from './useCardOrder'
 import { CardListItem } from './CardListItem'
+import { CardGridItem } from './CardGridItem'
 import { EmptyState } from '../components/EmptyState'
 import { Spinner } from '../components/Spinner'
 import { Button } from '../components/Button'
-import { CARD_CATEGORIES } from '../types'
+import { useLocalStorageState } from '../lib/useLocalStorageState'
+import { CARD_CATEGORIES, type AccessibleCard } from '../types'
+
+type ViewMode = 'list' | 'grid'
+
+function SortableCard({ card, view }: { card: AccessibleCard; view: ViewMode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: 'relative',
+  }
+  const dragHandle = { ...attributes, ...listeners }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {view === 'grid' ? (
+        <CardGridItem card={card} dragHandle={dragHandle} />
+      ) : (
+        <CardListItem card={card} dragHandle={dragHandle} />
+      )}
+    </div>
+  )
+}
 
 export default function CardsListPage() {
   const { data: cards, isLoading, isError } = useCards()
+  const { orderedCards, reorder } = useCardOrder(cards)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string | null>(null)
+  const [view, setView] = useLocalStorageState<ViewMode>('loyalty-cards:view-mode', 'list')
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const filtered = useMemo(() => {
-    if (!cards) return []
-    return cards.filter((c) => {
+    return orderedCards.filter((c) => {
       const matchesSearch = c.label.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = !category || c.category === category
       return matchesSearch && matchesCategory
     })
-  }, [cards, search, category])
+  }, [orderedCards, search, category])
 
   const categoriesInUse = useMemo(
     () => CARD_CATEGORIES.filter((cat) => cards?.some((c) => c.category === cat)),
     [cards],
   )
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      reorder(String(active.id), String(over.id))
+    }
+  }
+
   return (
     <div className="mx-auto max-w-lg px-4 pt-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Le mie carte</h1>
-        <Link to="/cards/new">
-          <Button variant="secondary" className="!px-3">
-            <Plus size={18} />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <div className="flex rounded-lg bg-slate-100 p-0.5">
+            <button
+              onClick={() => setView('list')}
+              aria-label="Vista elenco"
+              aria-pressed={view === 'list'}
+              className={`flex h-8 w-8 items-center justify-center rounded-md ${
+                view === 'list' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setView('grid')}
+              aria-label="Vista griglia"
+              aria-pressed={view === 'grid'}
+              className={`flex h-8 w-8 items-center justify-center rounded-md ${
+                view === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
+          <Link to="/cards/new">
+            <Button variant="secondary" className="!px-3">
+              <Plus size={18} />
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="relative mb-3">
@@ -104,11 +185,20 @@ export default function CardsListPage() {
         />
       )}
 
-      <div className="flex flex-col gap-2">
-        {filtered.map((card) => (
-          <CardListItem key={card.id} card={card} />
-        ))}
-      </div>
+      {filtered.length > 0 && (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={filtered.map((c) => c.id)}
+            strategy={view === 'grid' ? rectSortingStrategy : verticalListSortingStrategy}
+          >
+            <div className={view === 'grid' ? 'grid grid-cols-2 gap-3 pb-4' : 'flex flex-col gap-2 pb-4'}>
+              {filtered.map((card) => (
+                <SortableCard key={card.id} card={card} view={view} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   )
 }

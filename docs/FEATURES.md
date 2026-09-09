@@ -14,6 +14,8 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
       codice, con dataset locale estendibile
 - [x] Modifica di colore, icona, etichetta e categoria di ogni carta
 - [x] Categorie/tag e ricerca/filtro nella lista carte
+- [x] Vista elenco o griglia, a scelta, e riordino manuale delle carte via
+      drag & drop (preferenze salvate solo su questo dispositivo)
 - [x] Eliminazione carte
 
 ## Incluso — Condivisione tra utenti
