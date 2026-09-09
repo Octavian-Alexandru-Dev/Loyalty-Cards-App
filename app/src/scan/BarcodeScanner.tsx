@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserCodeReader, BrowserMultiFormatReader } from '@zxing/browser'
-import { BarcodeFormat, ChecksumException, FormatException, type Result } from '@zxing/library'
+import { BarcodeFormat, ChecksumException, DecodeHintType, FormatException, type Result } from '@zxing/library'
 import { Camera, Check } from 'lucide-react'
 import type { CodeFormat } from '../types'
 
@@ -70,7 +70,13 @@ interface BarcodeScannerProps {
  */
 export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [reader] = useState(() => new BrowserMultiFormatReader())
+  // TRY_HARDER spende più CPU per tentativo ma decodifica in modo molto più
+  // affidabile i codici 1D leggermente inclinati, sfocati ai bordi o poco
+  // contrastati: accettabile perché qui si decodifica un solo fotogramma su
+  // richiesta, non un flusso continuo.
+  const [reader] = useState(
+    () => new BrowserMultiFormatReader(new Map([[DecodeHintType.TRY_HARDER, true]])),
+  )
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [captureState, setCaptureState] = useState<CaptureState>('idle')
 
@@ -79,7 +85,16 @@ export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
     let stream: MediaStream | null = null
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
+      // Risoluzione più alta possibile: la risoluzione di default scelta dal
+      // browser (spesso 640x480) non ha abbastanza dettaglio per leggere in
+      // modo affidabile barcode 1D con barre sottili anche a fuoco perfetto.
+      .getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      })
       .then((s) => {
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop())
@@ -90,6 +105,14 @@ export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
           videoRef.current.srcObject = s
           void videoRef.current.play()
         }
+        // Autofocus continuo: non standard/non supportato ovunque, quindi
+        // best-effort e silenzioso se il dispositivo non lo prevede.
+        const [track] = s.getVideoTracks()
+        track
+          ?.applyConstraints({
+            advanced: [{ focusMode: 'continuous' } as unknown as MediaTrackConstraintSet],
+          })
+          .catch(() => {})
       })
       .catch((err: unknown) => {
         if (!cancelled) {

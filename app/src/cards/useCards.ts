@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as api from './api'
 import { replaceCachedCards, getCachedCards } from '../lib/db'
 import { useAuth } from '../auth/useAuth'
+import type { AccessibleCard } from '../types'
 
 const CARDS_KEY = ['cards'] as const
 
@@ -33,7 +34,19 @@ export function useCreateCard() {
       if (!session) throw new Error('Non autenticato')
       return api.createCard(session.user.id, input)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CARDS_KEY }),
+    // Scrive subito la carta appena creata nella cache, invece di limitarsi
+    // a invalidare la query e aspettare il refetch: chi chiama questa
+    // mutation naviga tipicamente alla vista di dettaglio della carta
+    // appena creata subito dopo, e senza questo la carta non risulta
+    // ancora nella cache in quel momento (mostra "Carta non trovata" finché
+    // il refetch in background non completa).
+    onSuccess: (created) => {
+      queryClient.setQueryData<AccessibleCard[]>(CARDS_KEY, (current) => [
+        { ...created, access: 'owner' },
+        ...(current ?? []).filter((c) => c.id !== created.id),
+      ])
+      void queryClient.invalidateQueries({ queryKey: CARDS_KEY })
+    },
   })
 }
 
@@ -41,7 +54,12 @@ export function useUpdateCard() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: api.CardUpdateInput }) => api.updateCard(id, patch),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CARDS_KEY }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<AccessibleCard[]>(CARDS_KEY, (current) =>
+        current?.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
+      )
+      void queryClient.invalidateQueries({ queryKey: CARDS_KEY })
+    },
   })
 }
 
@@ -49,6 +67,9 @@ export function useDeleteCard() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.deleteCard(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CARDS_KEY }),
+    onSuccess: (_data, id) => {
+      queryClient.setQueryData<AccessibleCard[]>(CARDS_KEY, (current) => current?.filter((c) => c.id !== id))
+      void queryClient.invalidateQueries({ queryKey: CARDS_KEY })
+    },
   })
 }
