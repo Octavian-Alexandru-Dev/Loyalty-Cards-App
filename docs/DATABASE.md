@@ -78,6 +78,20 @@ Nessuna tabella è leggibile o scrivibile senza autenticazione: `RLS` è
 abilitata ovunque e non esiste alcuna policy per il ruolo `anon` sui dati
 applicativi.
 
+## Nota tecnica: deduplica in `accessible_cards`
+
+La vista `accessible_cards` (usata dal frontend per la lista carte) unisce
+tre vie di accesso: proprietario, condivisione diretta con l'utente,
+condivisione con un gruppo di cui l'utente è membro. Una stessa carta può
+essere raggiungibile da più di una via contemporaneamente — tipicamente il
+proprietario condivide una carta con un gruppo di cui lui stesso è membro,
+oppure una carta è condivisa sia con un utente direttamente sia con un
+gruppo a cui appartiene. La vista calcola tutte le vie di accesso per ogni
+carta e tiene solo la migliore (`owner` > `reshare` > `view`, tramite
+`distinct on (card_id) ... order by priority`), così ogni carta compare
+**una sola volta** per utente, indipendentemente da quante condivisioni la
+rendano visibile.
+
 ## Nota tecnica: perché `cards_select` non usa una funzione helper
 
 Le altre policy usano funzioni `SECURITY DEFINER` (`is_group_member`,
