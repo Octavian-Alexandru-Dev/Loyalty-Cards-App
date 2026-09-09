@@ -1,7 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, UserPlus, X, Trash2 } from 'lucide-react'
-import { useMyGroups, useGroupMembers, useAddGroupMember, useRemoveGroupMember, useDeleteGroup } from './useGroups'
+import { ArrowLeft, UserPlus, X, Trash2, Link2, Copy, Check } from 'lucide-react'
+import {
+  useMyGroups,
+  useGroupMembers,
+  useAddGroupMember,
+  useRemoveGroupMember,
+  useDeleteGroup,
+  useCreateGroupInvite,
+} from './useGroups'
 import { useAuth } from '../auth/useAuth'
 import { Button } from '../components/Button'
 import { TextField } from '../components/TextField'
@@ -16,9 +23,12 @@ export default function GroupDetailPage() {
   const addMember = useAddGroupMember(id!)
   const removeMember = useRemoveGroupMember(id!)
   const deleteGroup = useDeleteGroup()
+  const createInvite = useCreateGroupInvite(id!)
 
   const [username, setUsername] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
+  const [inviteCopied, setInviteCopied] = useState(false)
 
   const group = groups?.find((g) => g.id === id)
   const isOwner = !!session && group?.owner_id === session.user.id
@@ -39,6 +49,28 @@ export default function GroupDetailPage() {
     if (!confirm('Eliminare il gruppo? Le carte condivise con il gruppo non saranno più visibili ai membri.')) return
     await deleteGroup.mutateAsync(id)
     navigate('/groups', { replace: true })
+  }
+
+  async function handleGenerateInvite() {
+    setError(null)
+    setInviteCopied(false)
+    try {
+      const invite = await createInvite.mutateAsync(undefined)
+      setInviteUrl(`${window.location.origin}/groups/join/${invite.token}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossibile creare il link di invito')
+    }
+  }
+
+  async function handleCopyInvite() {
+    if (!inviteUrl) return
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setInviteCopied(true)
+    } catch {
+      // clipboard non disponibile (es. contesto non sicuro): l'utente può
+      // comunque selezionare e copiare manualmente il testo mostrato.
+    }
   }
 
   return (
@@ -63,6 +95,34 @@ export default function GroupDetailPage() {
         </Button>
       </form>
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      {isOwner && (
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="mb-2 text-sm font-medium text-slate-700">Invita con un link</p>
+          <p className="mb-3 text-xs text-slate-500">
+            Chiunque apra questo link, da autenticato, entra automaticamente nel gruppo: non serve
+            conoscerne lo username.
+          </p>
+          {inviteUrl ? (
+            <div className="flex items-center gap-2">
+              <p className="flex-1 truncate rounded-xl bg-slate-50 p-2.5 text-xs text-slate-600">{inviteUrl}</p>
+              <Button type="button" variant="secondary" onClick={handleCopyInvite} aria-label="Copia link">
+                {inviteCopied ? <Check size={16} /> : <Copy size={16} />}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleGenerateInvite}
+              disabled={createInvite.isPending}
+            >
+              <Link2 size={16} />
+              Genera link di invito
+            </Button>
+          )}
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex justify-center py-10">

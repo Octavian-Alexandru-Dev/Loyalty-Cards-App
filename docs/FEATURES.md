@@ -25,6 +25,8 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
       ri-condividere ad altri
 - [x] Gruppi (es. famiglia/coinquilini): le carte condivise con un gruppo
       sono visibili a tutti i membri, presenti e futuri
+- [x] Ingresso in un gruppo tramite link di invito riutilizzabile generato
+      dal proprietario (non serve conoscere lo username di chi entra)
 - [x] Revoca della condivisione (dal lato di chi condivide o di chi riceve)
 - [x] Log di utilizzo: il proprietario di una carta vede chi, tra le persone
       con cui l'ha condivisa, l'ha aperta e quando

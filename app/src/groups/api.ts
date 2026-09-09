@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { findProfileByUsername } from '../share/api'
-import type { Group, GroupMember } from '../types'
+import type { Group, GroupMember, GroupInvite } from '../types'
 
 export async function listMyGroups(): Promise<Group[]> {
   const { data, error } = await supabase.from('groups').select('*').order('created_at', { ascending: false })
@@ -59,4 +59,27 @@ export async function addGroupMember(groupId: string, username: string) {
 export async function removeGroupMember(groupId: string, userId: string) {
   const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId)
   if (error) throw error
+}
+
+export async function createGroupInvite(
+  groupId: string,
+  createdBy: string,
+  expiresInHours?: number,
+): Promise<GroupInvite> {
+  const expires_at = expiresInHours
+    ? new Date(Date.now() + expiresInHours * 3_600_000).toISOString()
+    : null
+  const { data, error } = await supabase
+    .from('group_invites')
+    .insert({ group_id: groupId, created_by: createdBy, expires_at })
+    .select()
+    .single()
+  if (error) throw error
+  return data as GroupInvite
+}
+
+export async function redeemGroupInvite(token: string) {
+  const { data, error } = await supabase.rpc('redeem_group_invite', { p_token: token })
+  if (error) throw error
+  return data as { joined_group_id: string }[]
 }

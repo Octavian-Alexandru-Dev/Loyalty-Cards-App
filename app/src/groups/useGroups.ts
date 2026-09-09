@@ -49,3 +49,21 @@ export function useRemoveGroupMember(groupId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-members', groupId] }),
   })
 }
+
+export function useCreateGroupInvite(groupId: string) {
+  const { session } = useAuth()
+  return useMutation({
+    mutationFn: (expiresInHours?: number) => {
+      if (!session) throw new Error('Non autenticato')
+      return api.createGroupInvite(groupId, session.user.id, expiresInHours)
+    },
+  })
+}
+
+export function useRedeemGroupInvite() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (token: string) => api.redeemGroupInvite(token),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['groups'] }),
+  })
+}

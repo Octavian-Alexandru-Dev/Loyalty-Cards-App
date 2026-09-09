@@ -69,6 +69,15 @@ export interface CardShare {
   shared_with_group_name?: string | null
 }
 
+export interface GroupInvite {
+  id: string
+  group_id: string
+  created_by: string
+  token: string
+  expires_at: string | null
+  created_at: string
+}
+
 export interface ShareInvite {
   id: string
   card_id: string

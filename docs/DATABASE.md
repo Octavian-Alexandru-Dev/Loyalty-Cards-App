@@ -15,6 +15,16 @@ Un gruppo (es. "Famiglia Rossi") ha un owner e dei membri. Le carte
 condivise con un gruppo sono visibili a tutti i membri correnti — se qualcuno
 entra dopo, vede anche le carte già condivise in passato con il gruppo.
 
+### `group_invites`
+Un link di invito al gruppo, generato solo dal proprietario. A differenza di
+`share_invites` (usa e getta), qui non c'è un `redeemed_by`: lo stesso link
+può essere aperto da più persone finché non scade o il proprietario lo
+revoca, perché è pensato per essere condiviso una volta su una chat di
+gruppo. Chi apre il link chiama `redeem_group_invite(token)`, che inserisce
+la riga in `group_members` per suo conto (`SECURITY DEFINER`, con lo stesso
+schema di `redeem_card_invite`); `ON CONFLICT DO NOTHING` rende il riscatto
+idempotente per chi è già membro.
+
 ### `cards`
 La carta fedeltà vera e propria: `owner_id`, `label`, `brand_key` (per il
 riconoscimento automatico), `code_value` + `code_format` (il risultato della
@@ -47,6 +57,7 @@ Riassunto delle policy (vedi la migration per il SQL esatto):
 | `profiles` | tutti gli utenti autenticati (solo `id`+`username`) | solo il proprio profilo |
 | `groups` | owner o membri | owner (create/update/delete) |
 | `group_members` | membri dello stesso gruppo | owner del gruppo aggiunge/rimuove; un membro può rimuovere se stesso |
+| `group_invites` | chi lo ha creato (l'owner) | solo l'owner del gruppo; il redeem passa solo dalla funzione dedicata |
 | `cards` | owner, o chi ha una condivisione individuale/di gruppo attiva | solo owner |
 | `card_shares` | owner della carta, chi condivide, chi riceve | chi condivide, se è owner della carta o ha permesso `reshare` su di essa |
 | `share_invites` | chi lo ha creato | chi ha permesso di condividere la carta; il redeem passa solo dalla funzione dedicata |
