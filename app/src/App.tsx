@@ -12,6 +12,7 @@ const CardDetailPage = lazy(() => import('./cards/CardDetailPage'))
 const ScannerPage = lazy(() => import('./scan/ScannerPage'))
 const GroupsPage = lazy(() => import('./groups/GroupsPage'))
 const GroupDetailPage = lazy(() => import('./groups/GroupDetailPage'))
+const GroupInviteRedeemPage = lazy(() => import('./groups/GroupInviteRedeemPage'))
 const InviteRedeemPage = lazy(() => import('./share/InviteRedeemPage'))
 
 function PageFallback() {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/invite/:token" element={<InviteRedeemPage />} />
+        <Route path="/groups/join/:token" element={<GroupInviteRedeemPage />} />
 
         <Route
           element={
