@@ -1,22 +1,16 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { useCards, useCreateCard, useUpdateCard, useDeleteCard } from './useCards'
 import { TextField } from '../components/TextField'
 import { Button } from '../components/Button'
 import { IconGlyph } from '../components/IconGlyph'
-import { BRAND_PRESETS, guessCategory, guessFormatFromValue } from '../lib/brands'
+import { BRAND_PRESETS, guessFormatFromValue } from '../lib/brands'
 import { CARD_CATEGORIES, CARD_COLORS, CARD_ICONS, type CodeFormat } from '../types'
-
-interface ScanPrefill {
-  code_value: string
-  code_format: CodeFormat
-}
 
 export default function CardFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = !!id
-  const location = useLocation()
   const navigate = useNavigate()
   const { data: cards } = useCards()
   const createCard = useCreateCard()
@@ -24,11 +18,11 @@ export default function CardFormPage() {
   const deleteCard = useDeleteCard()
 
   const existing = useMemo(() => cards?.find((c) => c.id === id), [cards, id])
-  const scanPrefill = (location.state as { scan?: ScanPrefill } | null)?.scan
-  // Il formato è noto solo quando arriva dalla scansione o da una carta
-  // esistente: in inserimento manuale viene indovinato dal valore digitato,
-  // senza chiedere all'utente di scegliere un formato tecnico.
-  const formatIsAuto = !isEdit && !scanPrefill
+  // Il formato è noto solo quando si modifica una carta esistente: in
+  // inserimento (sempre manuale: la scansione salva direttamente dal
+  // banner in ScannerPage) viene indovinato dal valore digitato, senza
+  // chiedere all'utente di scegliere un formato tecnico.
+  const formatIsAuto = !isEdit
 
   const [label, setLabel] = useState('')
   const [codeValue, setCodeValue] = useState('')
@@ -38,8 +32,8 @@ export default function CardFormPage() {
   const [category, setCategory] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
-  // Precompila il form quando arrivano dati esterni asincroni: la carta da
-  // modificare (fetch React Query) o il codice appena scansionato.
+  // Precompila il form quando arriva la carta da modificare (fetch React
+  // Query asincrono).
   useEffect(() => {
     if (isEdit && existing) {
       setLabel(existing.label)
@@ -48,13 +42,8 @@ export default function CardFormPage() {
       setColor(existing.color)
       setIcon(existing.icon)
       setCategory(existing.category ?? '')
-    } else if (scanPrefill) {
-      setCodeValue(scanPrefill.code_value)
-      setCodeFormat(scanPrefill.code_format)
-      const suggested = guessCategory(scanPrefill.code_format, scanPrefill.code_value)
-      if (suggested) setCategory(suggested)
     }
-  }, [isEdit, existing, scanPrefill])
+  }, [isEdit, existing])
 
   useEffect(() => {
     if (!formatIsAuto) return
