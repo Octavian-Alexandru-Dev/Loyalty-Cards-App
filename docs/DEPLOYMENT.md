@@ -126,7 +126,36 @@ e tieni a portata di mano `Project URL` e `anon key`.
 Prima di considerarlo pronto per utenti reali: in **Authentication →
 Providers → Email**, verifica che **"Confirm email"** sia attivo (di
 default lo è), così un indirizzo email va verificato prima di poter
-accedere.
+accedere. Perché le email di conferma arrivino davvero (il servizio email
+integrato di Supabase è limitato a poche email/ora ed è pensato solo per
+i test), configura un provider SMTP vero in **Authentication → Settings →
+SMTP Settings** — un piano gratuito adatto è [Resend](https://resend.com)
+(100 email/giorno): host `smtp.resend.com`, porta `465`, username
+`resend`, password la tua API key Resend, mittente su un dominio che hai
+verificato su Resend.
+
+#### Login con Google (opzionale)
+
+L'app supporta anche l'accesso con un account Google, in alternativa a
+email+password. Per attivarlo:
+
+1. **Google Cloud Console** → https://console.cloud.google.com/apis/credentials
+   → crea un progetto (o usane uno esistente) → **Create Credentials →
+   OAuth client ID** → tipo applicazione **Web application**.
+2. In **Authorized redirect URIs** aggiungi l'URL di callback che Supabase
+   ti mostra nella sezione del punto 4 qui sotto (ha la forma
+   `https://<tuo-progetto>.supabase.co/auth/v1/callback`).
+3. Al termine, Google mostra **Client ID** e **Client secret**: copiali.
+4. Nel progetto Supabase: **Authentication → Providers → Google** → attiva
+   il provider → incolla Client ID e Client secret → **Save**.
+5. In **Authentication → URL Configuration**, assicurati che **Site URL**
+   e **Redirect URLs** includano l'URL pubblico dell'app (quello di
+   Cloudflare Workers, sezione 2.4) e, per testare in locale,
+   `http://localhost:5173`.
+
+Se salti questa sezione, l'app funziona comunque normalmente con
+email+password: il pulsante "Accedi con Google" restituirà solo un errore
+finché il provider non è configurato.
 
 ### 2.2 Hosting — Cloudflare Workers (static assets)
 

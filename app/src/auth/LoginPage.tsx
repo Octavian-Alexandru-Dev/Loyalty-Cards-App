@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CreditCard } from 'lucide-react'
 import { useAuth } from './useAuth'
+import { GoogleSignInButton } from './GoogleSignInButton'
 import { TextField } from '../components/TextField'
 import { Button } from '../components/Button'
 
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,6 +25,15 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : 'Accesso non riuscito')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleGoogle() {
+    setError(null)
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Accesso con Google non riuscito')
     }
   }
 
@@ -60,6 +70,14 @@ export default function LoginPage() {
             {loading ? 'Accesso in corso…' : 'Accedi'}
           </Button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs text-slate-400">oppure</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <GoogleSignInButton label="Accedi con Google" onClick={handleGoogle} />
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Non hai un account?{' '}
