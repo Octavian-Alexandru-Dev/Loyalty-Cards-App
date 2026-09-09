@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
-import { BarcodeFormat, type Result } from '@zxing/library'
+import { BrowserCodeReader, BrowserMultiFormatReader } from '@zxing/browser'
+import { BarcodeFormat, ChecksumException, FormatException, type Result } from '@zxing/library'
 import { Camera, Check } from 'lucide-react'
 import type { CodeFormat } from '../types'
 
@@ -24,7 +24,36 @@ function resultToCodeFormat(result: Result): CodeFormat {
   return KNOWN_FORMATS.has(name) ? (name as CodeFormat) : 'UNKNOWN'
 }
 
-type CaptureState = 'idle' | 'processing' | 'success' | 'not-found'
+type CaptureState = 'idle' | 'processing' | 'success' | 'not-found' | 'unreadable' | 'low-light'
+
+const CAPTURE_MESSAGES: Partial<Record<CaptureState, string>> = {
+  'not-found': 'Nessun codice individuato: avvicinati e inquadra bene il codice.',
+  unreadable: 'Codice individuato ma non leggibile: tieni fermo il telefono e mettilo a fuoco.',
+  'low-light': 'Poca luce: illumina meglio il codice.',
+}
+
+const LOW_LIGHT_THRESHOLD = 55 // luminanza media 0-255 di un fotogramma "buio"
+
+/**
+ * Stima la luminosità media del fotogramma corrente campionando un canvas
+ * ridotto (non serve leggere ogni pixel a piena risoluzione): utile per
+ * distinguere "troppo buio per leggere qualsiasi codice" da "nessun codice
+ * nell'inquadratura", cosa che ZXing da solo non segnala.
+ */
+function estimateBrightness(video: HTMLVideoElement): number | null {
+  const probe = document.createElement('canvas')
+  probe.width = 32
+  probe.height = 24
+  const ctx = probe.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return null
+  ctx.drawImage(video, 0, 0, probe.width, probe.height)
+  const { data } = ctx.getImageData(0, 0, probe.width, probe.height)
+  let total = 0
+  for (let i = 0; i < data.length; i += 4) {
+    total += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]
+  }
+  return total / (data.length / 4)
+}
 
 interface BarcodeScannerProps {
   /** Se false, la fotocamera resta accesa ma il pulsante di scatto è nascosto (usato mentre l'utente conferma un risultato). */
@@ -81,18 +110,30 @@ export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
   function handleCapture() {
     if (!videoRef.current || captureState === 'processing' || captureState === 'success') return
     setCaptureState('processing')
+
+    const brightness = estimateBrightness(videoRef.current)
+    if (brightness !== null && brightness < LOW_LIGHT_THRESHOLD) {
+      setCaptureState('low-light')
+      window.setTimeout(() => setCaptureState('idle'), 1800)
+      return
+    }
+
     try {
-      const result = reader.decode(videoRef.current)
+      const canvas = BrowserCodeReader.createCanvasFromMediaElement(videoRef.current)
+      const result = reader.decodeFromCanvas(canvas)
       setCaptureState('success')
       navigator.vibrate?.(80)
       window.setTimeout(() => {
         onDetected(result.getText(), resultToCodeFormat(result))
       }, 250)
-    } catch {
-      // Nessun codice leggibile in questo fotogramma: non è un errore da
-      // segnalare in modo allarmante, solo un invito a riprovare.
-      setCaptureState('not-found')
-      window.setTimeout(() => setCaptureState('idle'), 1500)
+    } catch (err) {
+      // ZXing distingue "nessun pattern trovato" da "pattern trovato ma
+      // checksum/formato non validi": quest'ultimo caso è quasi sempre
+      // sfocatura, angolazione o distanza sbagliate, non assenza di codice,
+      // quindi merita un messaggio diverso e più utile.
+      const unreadable = err instanceof ChecksumException || err instanceof FormatException
+      setCaptureState(unreadable ? 'unreadable' : 'not-found')
+      window.setTimeout(() => setCaptureState('idle'), 1800)
     }
   }
 
@@ -101,7 +142,9 @@ export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
       ? 'border-emerald-400'
       : captureState === 'not-found'
         ? 'border-red-400'
-        : 'border-white/70'
+        : captureState === 'unreadable' || captureState === 'low-light'
+          ? 'border-amber-400'
+          : 'border-white/70'
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-black">
@@ -111,9 +154,13 @@ export function BarcodeScanner({ active, onDetected }: BarcodeScannerProps) {
 
       {active && !cameraError && (
         <div className="absolute inset-x-0 bottom-4 flex flex-col items-center gap-2">
-          {captureState === 'not-found' && (
-            <p className="rounded-full bg-red-600/90 px-3 py-1 text-xs font-medium text-white">
-              Nessun codice rilevato, riprova
+          {CAPTURE_MESSAGES[captureState] && (
+            <p
+              className={`mx-4 rounded-xl px-3 py-1.5 text-center text-xs font-medium text-white ${
+                captureState === 'not-found' ? 'bg-red-600/90' : 'bg-amber-600/90'
+              }`}
+            >
+              {CAPTURE_MESSAGES[captureState]}
             </p>
           )}
           <button
