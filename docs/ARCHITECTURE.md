@@ -37,7 +37,7 @@ file statici.
 | Scansione | `@zxing/browser` | multi-formato (QR, EAN-13/8, Code128, Code39, ITF, Codabar, PDF417, Aztec, Data Matrix, UPC), attivo su tutti i browser con `getUserMedia` |
 | Generazione codici a schermo | `qrcode.react` + `jsbarcode` | rendering client-side dal valore decodificato |
 | PWA | `vite-plugin-pwa` (Workbox) | manifest, service worker, aggiornamento app |
-| Hosting | Cloudflare Pages (o Vercel/Netlify) | CDN globale, deploy da Git, piano gratuito |
+| Hosting | Cloudflare Workers (static assets) | CDN globale, `wrangler deploy`, piano gratuito |
 | Test | Vitest + Testing Library | veloce, integrato con Vite |
 
 ## Perché Supabase e non Firebase

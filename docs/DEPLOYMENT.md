@@ -3,7 +3,7 @@
 Questa guida copre due percorsi separati:
 
 1. **Test in locale** — per sviluppare/provare l'app sul proprio computer.
-2. **Ambiente cloud di produzione** — Supabase (backend) + Cloudflare Pages
+2. **Ambiente cloud di produzione** — Supabase (backend) + Cloudflare Workers
    (hosting), con rilascio automatico via GitHub Actions ad ogni push su
    `main`.
 
@@ -128,27 +128,32 @@ Providers → Email**, verifica che **"Confirm email"** sia attivo (di
 default lo è), così un indirizzo email va verificato prima di poter
 accedere.
 
-### 2.2 Hosting — Cloudflare Pages
+### 2.2 Hosting — Cloudflare Workers (static assets)
+
+L'app è una SPA statica: viene servita da un Worker configurato per
+distribuire i file di `app/dist` (nessun codice server-side), con fallback
+automatico a `index.html` per le rotte client-side di React Router. La
+configurazione è già nel repository in
+[`app/wrangler.jsonc`](../app/wrangler.jsonc).
 
 1. Crea un account gratuito su https://dash.cloudflare.com.
-2. Vai su **Workers & Pages → Create → Pages**. Non serve creare il
-   progetto manualmente dall'interfaccia: il primo deploy da GitHub Actions
-   (sezione 3) lo crea automaticamente con il nome che indicherai nei
-   secrets. Se preferisci crearlo a mano, il nome deve coincidere con
-   `CLOUDFLARE_PAGES_PROJECT` (vedi sotto).
+2. Non serve creare il Worker manualmente dall'interfaccia: il primo
+   deploy da GitHub Actions (sezione 3, comando `wrangler deploy`) lo crea
+   automaticamente con il nome definito in `app/wrangler.jsonc`
+   (`loyalty-cards-app`).
 3. Recupera un **API Token**: **My Profile → API Tokens → Create Token**,
-   usa il template **"Edit Cloudflare Workers"** (include i permessi Pages
-   necessari) oppure crea un token custom con permesso
-   `Account.Cloudflare Pages: Edit`. Copialo (visibile una sola volta).
+   usa il template **"Edit Cloudflare Workers"**. Copialo (visibile una
+   sola volta).
 4. Recupera l'**Account ID**: visibile nella barra laterale destra di
    qualunque pagina del dashboard Cloudflare, o in **Workers & Pages** →
-   qualsiasi progetto → "Account ID".
+   qualsiasi worker → "Account ID".
 
 ### 2.3 Collega GitHub Actions (rilascio automatico su push a `main`)
 
 Il repository include già `.github/workflows/deploy.yml`: ad ogni push sul
 branch `main` che supera lint, typecheck, test e build, l'app viene
-pubblicata automaticamente su Cloudflare Pages.
+pubblicata automaticamente su Cloudflare Workers (`wrangler deploy`,
+tramite l'azione ufficiale `cloudflare/wrangler-action`).
 
 Configura i **secrets** del repository (**Settings → Secrets and
 variables → Actions → New repository secret**):
@@ -160,11 +165,8 @@ variables → Actions → New repository secret**):
 | `CLOUDFLARE_API_TOKEN` | Il token creato al punto 2.2.3 |
 | `CLOUDFLARE_ACCOUNT_ID` | L'Account ID recuperato al punto 2.2.4 |
 
-Facoltativo, in **Settings → Secrets and variables → Actions → Variables**:
-
-| Nome | Valore | Default se assente |
-|---|---|---|
-| `CLOUDFLARE_PAGES_PROJECT` | Nome del progetto Pages, es. `carte-fedelta` | `loyalty-cards-app` |
+Non serve nessuna variabile aggiuntiva per il nome del progetto: è definito
+in `app/wrangler.jsonc`.
 
 Da quel momento, ogni `git push` su `main` (o merge di una pull request)
 attiva automaticamente il workflow: build → test → deploy. Puoi seguirne
@@ -172,9 +174,9 @@ l'esecuzione nella scheda **Actions** del repository su GitHub.
 
 ### 2.4 Verifica
 
-- Apri l'URL pubblico (`https://<progetto>.pages.dev`, o il dominio
-  custom se ne colleghi uno) da smartphone: dovrebbe comparire il prompt
-  "Aggiungi a schermata Home" (installabilità PWA).
+- Apri l'URL pubblico (`https://<nome-worker>.<tuo-subdominio>.workers.dev`,
+  o il dominio custom se ne colleghi uno) da smartphone: dovrebbe comparire
+  il prompt "Aggiungi a schermata Home" (installabilità PWA).
 - Registra un utente, scansiona una carta, verifica che compaia nella
   tabella `cards` del progetto Supabase di produzione.
 - Registra un secondo utente e prova la condivisione.
@@ -183,7 +185,7 @@ l'esecuzione nella scheda **Actions** del repository su GitHub.
 
 Con uso personale/famigliare (decine di utenti, centinaia di carte), il
 progetto resta comodamente dentro i piani Free di Supabase, Cloudflare
-Pages e GitHub Actions (2.000 minuti/mese gratuiti su repository privati,
+Workers e GitHub Actions (2.000 minuti/mese gratuiti su repository privati,
 illimitati su repository pubblici): **0 €/mese**. Il limite da monitorare
 nel tempo è la banda/le righe lette su Supabase se il numero di utenti
 cresce molto: in tal caso i piani a pagamento partono comunque da poche
@@ -202,7 +204,7 @@ Due workflow GitHub Actions, in [`.github/workflows/`](../.github/workflows):
   uno stato valido, indipendentemente dal deploy.
 - **`deploy.yml`** — solo sui push diretti a `main`: ripete le stesse
   verifiche con le chiavi Supabase **reali** (dai secrets), poi pubblica la
-  build su Cloudflare Pages.
+  build su Cloudflare Workers.
 
 Il deploy non parte mai se lint, typecheck, test o build falliscono: un
 push che rompe la build non arriva mai in produzione.

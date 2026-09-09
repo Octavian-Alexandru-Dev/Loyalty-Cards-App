@@ -13,7 +13,7 @@ con altri utenti o con il tuo gruppo famiglia/coinquilini.
   (nessun server di elaborazione immagini). Nel database viene salvato solo il
   valore decodificato (testo + formato), mai l'immagine scansionata.
 - **Costo zero**: stack pensato per restare nei piani gratuiti di Supabase e
-  di un host statico (Cloudflare Pages / Vercel / Netlify).
+  di un host statico (Cloudflare Workers).
 - **PWA installabile**: manifest + service worker, funziona offline per le
   carte già sincronizzate.
 
@@ -38,7 +38,7 @@ smartphone): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#1-test-in-locale).
 
 ## Deploy in produzione
 
-Backend Supabase + hosting Cloudflare Pages, con rilascio automatico via
+Backend Supabase + hosting Cloudflare Workers, con rilascio automatico via
 GitHub Actions ad ogni push su `main`. Guida completa:
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#2-ambiente-cloud-di-produzione-costo-zero).
 
