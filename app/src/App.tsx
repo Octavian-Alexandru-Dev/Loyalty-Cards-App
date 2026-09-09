@@ -14,6 +14,8 @@ const GroupsPage = lazy(() => import('./groups/GroupsPage'))
 const GroupDetailPage = lazy(() => import('./groups/GroupDetailPage'))
 const GroupInviteRedeemPage = lazy(() => import('./groups/GroupInviteRedeemPage'))
 const InviteRedeemPage = lazy(() => import('./share/InviteRedeemPage'))
+const AccountPage = lazy(() => import('./account/AccountPage'))
+const InstallGuidePage = lazy(() => import('./account/InstallGuidePage'))
 
 function PageFallback() {
   return (
@@ -46,6 +48,8 @@ export default function App() {
           <Route path="/scan" element={<ScannerPage />} />
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/groups/:id" element={<GroupDetailPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/guide" element={<InstallGuidePage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/cards" replace />} />
