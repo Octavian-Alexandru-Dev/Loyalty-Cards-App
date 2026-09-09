@@ -6,7 +6,11 @@ export interface AuthState {
   session: Session | null
   profile: Profile | null
   loading: boolean
-  signUp: (email: string, password: string, username: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    username: string,
+  ) => Promise<{ requiresEmailConfirmation: boolean }>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }

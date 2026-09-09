@@ -32,8 +32,12 @@ export default function SignupPage() {
 
     setLoading(true)
     try {
-      await signUp(email, password, username)
-      setDone(true)
+      const { requiresEmailConfirmation } = await signUp(email, password, username)
+      if (requiresEmailConfirmation) {
+        setDone(true)
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registrazione non riuscita')
     } finally {
