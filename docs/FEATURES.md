@@ -20,7 +20,8 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
 
 ## Incluso — Condivisione tra utenti
 
-- [x] Autenticazione obbligatoria (email + password via Supabase Auth)
+- [x] Autenticazione obbligatoria (email + password, oppure Google OAuth,
+      via Supabase Auth)
 - [x] Condivisione di una carta con un utente specifico (per username) o
       tramite invito generato come QR da far scansionare
 - [x] Permessi di condivisione: sola visualizzazione/uso vs. possibilità di

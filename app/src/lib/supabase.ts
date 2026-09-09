@@ -15,5 +15,9 @@ export const supabase = createClient(url ?? '', anonKey ?? '', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    // Necessario per l'OAuth (es. Google): dopo il redirect di ritorno dal
+    // provider, supabase-js legge il codice/token dall'URL della pagina e
+    // completa il login automaticamente.
+    detectSessionInUrl: true,
   },
 })
