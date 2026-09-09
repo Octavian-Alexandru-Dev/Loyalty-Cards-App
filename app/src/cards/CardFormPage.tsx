@@ -5,7 +5,7 @@ import { useCards, useCreateCard, useUpdateCard, useDeleteCard } from './useCard
 import { TextField } from '../components/TextField'
 import { Button } from '../components/Button'
 import { IconGlyph } from '../components/IconGlyph'
-import { BRAND_PRESETS, guessCategory } from '../lib/brands'
+import { BRAND_PRESETS, guessCategory, guessFormatFromValue } from '../lib/brands'
 import { CARD_CATEGORIES, CARD_COLORS, CARD_ICONS, type CodeFormat } from '../types'
 
 interface ScanPrefill {
@@ -25,6 +25,10 @@ export default function CardFormPage() {
 
   const existing = useMemo(() => cards?.find((c) => c.id === id), [cards, id])
   const scanPrefill = (location.state as { scan?: ScanPrefill } | null)?.scan
+  // Il formato è noto solo quando arriva dalla scansione o da una carta
+  // esistente: in inserimento manuale viene indovinato dal valore digitato,
+  // senza chiedere all'utente di scegliere un formato tecnico.
+  const formatIsAuto = !isEdit && !scanPrefill
 
   const [label, setLabel] = useState('')
   const [codeValue, setCodeValue] = useState('')
@@ -51,6 +55,11 @@ export default function CardFormPage() {
       if (suggested) setCategory(suggested)
     }
   }, [isEdit, existing, scanPrefill])
+
+  useEffect(() => {
+    if (!formatIsAuto) return
+    setCodeFormat(guessFormatFromValue(codeValue))
+  }, [formatIsAuto, codeValue])
 
   function applyPreset(presetKey: string) {
     const preset = BRAND_PRESETS.find((p) => p.key === presetKey)
@@ -137,37 +146,18 @@ export default function CardFormPage() {
 
         <TextField label="Nome carta" required value={label} onChange={(e) => setLabel(e.target.value)} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div>
           <TextField
             label="Codice"
             required
             value={codeValue}
             onChange={(e) => setCodeValue(e.target.value)}
           />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700" htmlFor="code-format">
-              Formato
-            </label>
-            <select
-              id="code-format"
-              value={codeFormat}
-              onChange={(e) => setCodeFormat(e.target.value as CodeFormat)}
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-base focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-            >
-              <option value="QR_CODE">QR Code</option>
-              <option value="EAN_13">EAN-13</option>
-              <option value="EAN_8">EAN-8</option>
-              <option value="CODE_128">Code 128</option>
-              <option value="CODE_39">Code 39</option>
-              <option value="ITF">ITF</option>
-              <option value="CODABAR">Codabar</option>
-              <option value="UPC_A">UPC-A</option>
-              <option value="UPC_E">UPC-E</option>
-              <option value="PDF_417">PDF417</option>
-              <option value="AZTEC">Aztec</option>
-              <option value="DATA_MATRIX">Data Matrix</option>
-            </select>
-          </div>
+          {formatIsAuto && (
+            <p className="mt-1.5 text-xs text-slate-400">
+              Il numero stampato sotto il codice a barre della carta.
+            </p>
+          )}
         </div>
 
         <div>

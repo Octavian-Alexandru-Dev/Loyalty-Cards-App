@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BRAND_PRESETS, guessCategory } from './brands'
+import { BRAND_PRESETS, guessCategory, guessFormatFromValue } from './brands'
 
 describe('guessCategory', () => {
   it('suggerisce "supermercato" per un EAN-13 nella fascia GS1 20-29 (restricted circulation)', () => {
@@ -18,6 +18,32 @@ describe('guessCategory', () => {
   it('non suggerisce nulla per un valore EAN-13 malformato', () => {
     expect(guessCategory('EAN_13', 'abc')).toBeNull()
     expect(guessCategory('EAN_13', '201234500001')).toBeNull() // 12 cifre, non 13
+  })
+})
+
+describe('guessFormatFromValue', () => {
+  it('riconosce un EAN-13 da 13 cifre', () => {
+    expect(guessFormatFromValue('2012345000017')).toBe('EAN_13')
+  })
+
+  it('riconosce un UPC-A da 12 cifre', () => {
+    expect(guessFormatFromValue('012345678905')).toBe('UPC_A')
+  })
+
+  it('riconosce un EAN-8 da 8 cifre', () => {
+    expect(guessFormatFromValue('96385074')).toBe('EAN_8')
+  })
+
+  it('ricade su Code 128 per valori numerici di altre lunghezze', () => {
+    expect(guessFormatFromValue('12345')).toBe('CODE_128')
+  })
+
+  it('ricade su Code 128 per valori alfanumerici', () => {
+    expect(guessFormatFromValue('ABC-123')).toBe('CODE_128')
+  })
+
+  it('ignora gli spazi ai bordi nel contare le cifre', () => {
+    expect(guessFormatFromValue('  2012345000017  ')).toBe('EAN_13')
   })
 })
 

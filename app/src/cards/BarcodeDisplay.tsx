@@ -22,17 +22,25 @@ const JSBARCODE_FORMAT: Partial<Record<CodeFormat, string>> = {
  * di generazione usate in questo progetto — mostriamo un QR di fallback
  * che codifica lo stesso valore testuale, dichiarandolo esplicitamente.
  */
-export function BarcodeDisplay({ value, format }: { value: string; format: CodeFormat }) {
+interface BarcodeDisplayProps {
+  value: string
+  format: CodeFormat
+  /** "large" per la vista a schermo intero (più leggibile per lo scanner alla cassa). */
+  size?: 'normal' | 'large'
+}
+
+export function BarcodeDisplay({ value, format, size = 'normal' }: BarcodeDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const jsBarcodeFormat = JSBARCODE_FORMAT[format]
+  const large = size === 'large'
 
   useEffect(() => {
     if (jsBarcodeFormat && canvasRef.current) {
       try {
         JsBarcode(canvasRef.current, value, {
           format: jsBarcodeFormat,
-          width: 2,
-          height: 90,
+          width: large ? 3 : 2,
+          height: large ? 140 : 90,
           displayValue: true,
           margin: 8,
         })
@@ -41,12 +49,12 @@ export function BarcodeDisplay({ value, format }: { value: string; format: CodeF
         // canvas resta vuoto e il valore testuale sotto resta comunque leggibile.
       }
     }
-  }, [value, jsBarcodeFormat])
+  }, [value, jsBarcodeFormat, large])
 
   if (format === 'QR_CODE') {
     return (
       <div className="flex justify-center rounded-2xl bg-white p-6">
-        <QRCodeSVG value={value} size={220} level="M" />
+        <QRCodeSVG value={value} size={large ? 280 : 220} level="M" />
       </div>
     )
   }
@@ -61,7 +69,7 @@ export function BarcodeDisplay({ value, format }: { value: string; format: CodeF
 
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-6">
-      <QRCodeSVG value={value} size={180} level="M" />
+      <QRCodeSVG value={value} size={large ? 240 : 180} level="M" />
       <p className="text-center text-xs text-slate-400">
         Formato {format} non renderizzabile nativamente: QR di fallback con lo stesso valore.
       </p>

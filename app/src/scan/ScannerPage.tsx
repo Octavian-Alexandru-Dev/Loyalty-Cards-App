@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, X, Pencil, ScanLine } from 'lucide-react'
+import { X, Pencil, ScanLine } from 'lucide-react'
 import { BarcodeScanner } from './BarcodeScanner'
 import { useCreateCard } from '../cards/useCards'
 import { Button } from '../components/Button'
 import { BRAND_PRESETS, guessCategory } from '../lib/brands'
 import type { CodeFormat } from '../types'
-import { CARD_COLORS, CARD_ICONS } from '../types'
 
 interface Detection {
   value: string
@@ -24,19 +23,23 @@ export default function ScannerPage() {
     setDetection((current) => current ?? { value, format })
   }
 
-  async function handleQuickSave(presetKey?: string) {
+  // Il nome della carta è sempre scelto esplicitamente dall'utente: qui si
+  // salva subito solo quando corrisponde a una catena nota (il nome non è
+  // ambiguo), altrimenti si passa dalla schermata "Assegna nome e salva".
+  async function handleQuickSave(presetKey: string) {
     if (!detection) return
     setError(null)
     const preset = BRAND_PRESETS.find((p) => p.key === presetKey)
-    const category = preset?.category ?? guessCategory(detection.format, detection.value)
+    if (!preset) return
+    const category = preset.category ?? guessCategory(detection.format, detection.value)
     try {
       await createCard.mutateAsync({
-        label: preset?.name ?? `Carta ${detection.format}`,
-        brand_key: preset?.key ?? null,
+        label: preset.name,
+        brand_key: preset.key,
         code_value: detection.value,
         code_format: detection.format,
-        color: preset?.color ?? CARD_COLORS[0],
-        icon: preset?.icon ?? CARD_ICONS[0],
+        color: preset.color,
+        icon: preset.icon,
         category: category ?? null,
       })
       setSavedCount((n) => n + 1)
@@ -65,8 +68,8 @@ export default function ScannerPage() {
       <BarcodeScanner active={!detection} onDetected={handleDetected} />
 
       <p className="mt-3 text-center text-sm text-slate-500">
-        Inquadra il codice a barre o il QR code della carta. Puoi scansionarne più di una di
-        seguito: dopo aver salvato, la fotocamera resta attiva.
+        Inquadra il codice della carta nel riquadro e tocca il pulsante per scattare. Puoi
+        scansionarne più di una di seguito: dopo aver salvato, la fotocamera resta attiva.
       </p>
 
       {savedCount > 0 && (
@@ -78,17 +81,16 @@ export default function ScannerPage() {
       {detection && (
         <div className="fixed inset-x-0 bottom-20 z-20 mx-auto max-w-lg px-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg">
-            <p className="mb-1 text-sm font-medium text-slate-900">Codice rilevato</p>
-            <p className="mb-3 truncate text-xs text-slate-500">
-              {detection.format} · {detection.value}
-            </p>
+            <p className="mb-3 truncate text-sm font-medium text-emerald-600">✓ Codice rilevato</p>
 
+            <p className="mb-2 text-xs font-medium text-slate-500">È una di queste catene? Salva subito:</p>
             <div className="mb-3 flex flex-wrap gap-2">
               {BRAND_PRESETS.slice(0, 6).map((preset) => (
                 <button
                   key={preset.key}
                   onClick={() => handleQuickSave(preset.key)}
-                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:border-slate-300"
+                  disabled={createCard.isPending}
+                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:border-slate-300 disabled:opacity-60"
                 >
                   {preset.name}
                 </button>
@@ -101,13 +103,9 @@ export default function ScannerPage() {
               <Button variant="secondary" onClick={handleDiscard} aria-label="Ignora">
                 <X size={16} />
               </Button>
-              <Button variant="secondary" fullWidth onClick={handleEditDetails}>
+              <Button fullWidth onClick={handleEditDetails}>
                 <Pencil size={16} />
-                Modifica
-              </Button>
-              <Button fullWidth onClick={() => handleQuickSave()} disabled={createCard.isPending}>
-                <Check size={16} />
-                Salva
+                Assegna nome e salva
               </Button>
             </div>
           </div>
