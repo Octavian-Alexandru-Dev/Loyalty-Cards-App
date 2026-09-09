@@ -22,14 +22,18 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
 
 - [x] Autenticazione obbligatoria (email + password, oppure Google OAuth,
       via Supabase Auth)
-- [x] Condivisione di una carta con un utente specifico (per username) o
+- [x] Condivisione di una carta con un utente specifico (per username, o
+      selezionandolo dai membri di un gruppo senza doverlo digitare) o
       tramite invito generato come QR da far scansionare
+- [x] Condivisione di una carta con un intero gruppo in un'unica azione
+      (visibile subito a tutti i membri, presenti e futuri)
 - [x] Permessi di condivisione: sola visualizzazione/uso vs. possibilità di
       ri-condividere ad altri
 - [x] Gruppi (es. famiglia/coinquilini): le carte condivise con un gruppo
       sono visibili a tutti i membri, presenti e futuri
 - [x] Ingresso in un gruppo tramite link di invito riutilizzabile generato
-      dal proprietario (non serve conoscere lo username di chi entra)
+      dal proprietario (non serve conoscere lo username di chi entra), con
+      elenco dei link attivi e possibilità di revocarli
 - [x] Revoca della condivisione (dal lato di chi condivide o di chi riceve)
 - [x] Log di utilizzo: il proprietario di una carta vede chi, tra le persone
       con cui l'ha condivisa, l'ha aperta e quando
