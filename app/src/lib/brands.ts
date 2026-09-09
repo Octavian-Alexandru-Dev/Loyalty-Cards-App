@@ -51,3 +51,20 @@ export function guessCategory(format: CodeFormat, value: string): CardCategory |
   }
   return null
 }
+
+/**
+ * Indovina il formato del codice quando l'utente lo digita a mano (senza
+ * passare dalla fotocamera), così l'app non deve chiedergli di scegliere un
+ * formato tecnico che non gli interessa. Si basa solo sulla lunghezza per i
+ * pattern numerici standard GS1 (EAN/UPC); qualunque altro valore ricade su
+ * Code 128, un formato a barre generico che accetta lettere e numeri.
+ */
+export function guessFormatFromValue(value: string): CodeFormat {
+  const trimmed = value.trim()
+  if (/^\d+$/.test(trimmed)) {
+    if (trimmed.length === 13) return 'EAN_13'
+    if (trimmed.length === 12) return 'UPC_A'
+    if (trimmed.length === 8) return 'EAN_8'
+  }
+  return 'CODE_128'
+}

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pencil, Share2, Trash2, X, QrCode, History } from 'lucide-react'
+import { ArrowLeft, Pencil, Share2, Trash2, X, QrCode, History, Maximize2 } from 'lucide-react'
 import { useCards, useDeleteCard } from './useCards'
 import { logCardUsage } from './api'
 import { BarcodeDisplay } from './BarcodeDisplay'
+import { CardCodeViewer } from './CardCodeViewer'
 import { useAuth } from '../auth/useAuth'
 import { Button } from '../components/Button'
 import { TextField } from '../components/TextField'
@@ -26,6 +27,7 @@ export default function CardDetailPage() {
   const { data: cards, isLoading } = useCards()
   const deleteCard = useDeleteCard()
   const [shareOpen, setShareOpen] = useState(false)
+  const [viewerOpen, setViewerOpen] = useState(false)
 
   const card = useMemo(() => cards?.find((c) => c.id === id), [cards, id])
   const isOwner = card?.access === 'owner'
@@ -83,7 +85,25 @@ export default function CardDetailPage() {
         )}
       </div>
 
-      <BarcodeDisplay value={card.code_value} format={card.code_format} />
+      <button
+        type="button"
+        onClick={() => setViewerOpen(true)}
+        className="relative block w-full text-left"
+        aria-label="Mostra il codice a schermo intero"
+      >
+        <BarcodeDisplay value={card.code_value} format={card.code_format} />
+        <span className="absolute right-3 top-3 rounded-full bg-black/40 p-1.5 text-white">
+          <Maximize2 size={14} />
+        </span>
+      </button>
+
+      {viewerOpen && (
+        <CardCodeViewer
+          value={card.code_value}
+          format={card.code_format}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
 
       {card.category && (
         <p className="mt-3 text-center text-sm capitalize text-slate-500">{card.category}</p>
