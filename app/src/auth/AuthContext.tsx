@@ -44,12 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session])
 
   async function signUp(email: string, password: string, username: string) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username } },
     })
     if (error) throw error
+    // Con "Confirm email" disattivato, Supabase restituisce subito una
+    // sessione attiva e non invia nessuna email di conferma.
+    return { requiresEmailConfirmation: data.session === null }
   }
 
   async function signIn(email: string, password: string) {
