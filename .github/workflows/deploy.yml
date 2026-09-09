@@ -14,12 +14,11 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build & deploy to Cloudflare Pages
+    name: Build & deploy to Cloudflare Workers
     runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: read
-      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,11 +48,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'loyalty-cards-app' }}
-          directory: app/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          workingDirectory: app
+          command: deploy
