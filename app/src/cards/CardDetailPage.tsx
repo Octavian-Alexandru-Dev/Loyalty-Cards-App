@@ -17,7 +17,7 @@ import {
   useRevokeShare,
   useCreateInvite,
 } from '../share/useShares'
-import { useMyGroups } from '../groups/useGroups'
+import { useMyGroups, useGroupMembers } from '../groups/useGroups'
 import type { SharePermission } from '../types'
 
 export default function CardDetailPage() {
@@ -131,6 +131,7 @@ export default function CardDetailPage() {
 }
 
 function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void }) {
+  const { session } = useAuth()
   const { data: shares } = useCardShares(cardId)
   const { data: groups } = useMyGroups()
   const shareWithUser = useShareWithUser(cardId)
@@ -141,6 +142,7 @@ function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void
   const [username, setUsername] = useState('')
   const [permission, setPermission] = useState<SharePermission>('view')
   const [groupId, setGroupId] = useState('')
+  const [pickerGroupId, setPickerGroupId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
 
@@ -161,6 +163,15 @@ function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void
     if (!groupId) return
     try {
       await shareWithGroup.mutateAsync({ groupId, permission })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Condivisione non riuscita')
+    }
+  }
+
+  async function handlePickMember(memberUsername: string) {
+    setError(null)
+    try {
+      await shareWithUser.mutateAsync({ username: memberUsername, permission })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Condivisione non riuscita')
     }
@@ -199,23 +210,10 @@ function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void
         ))}
       </div>
 
-      <form onSubmit={handleShareUser} className="mb-2 flex items-end gap-2">
-        <div className="flex-1">
-          <TextField
-            label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          />
-        </div>
-        <Button type="submit" disabled={shareWithUser.isPending}>
-          Invia
-        </Button>
-      </form>
-
       {groups && groups.length > 0 && (
-        <form onSubmit={handleShareGroup} className="mb-2 flex items-end gap-2">
+        <form onSubmit={handleShareGroup} className="mb-3 flex items-end gap-2">
           <div className="flex-1">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Oppure un gruppo</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Condividi con un gruppo</label>
             <select
               value={groupId}
               onChange={(e) => setGroupId(e.target.value)}
@@ -234,6 +232,47 @@ function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void
           </Button>
         </form>
       )}
+
+      {groups && groups.length > 0 && (
+        <div className="mb-3">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            Condividi con una persona da un gruppo
+          </label>
+          <select
+            value={pickerGroupId}
+            onChange={(e) => setPickerGroupId(e.target.value)}
+            className="mb-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-base focus:border-brand-500 focus:outline-none"
+          >
+            <option value="">Scegli da un gruppo…</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+          {pickerGroupId && (
+            <GroupMemberPicker
+              groupId={pickerGroupId}
+              excludeUserId={session?.user.id}
+              onPick={handlePickMember}
+              disabled={shareWithUser.isPending}
+            />
+          )}
+        </div>
+      )}
+
+      <form onSubmit={handleShareUser} className="mb-2 flex items-end gap-2">
+        <div className="flex-1">
+          <TextField
+            label="Oppure digita uno username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+          />
+        </div>
+        <Button type="submit" disabled={shareWithUser.isPending}>
+          Invia
+        </Button>
+      </form>
 
       <Button variant="ghost" fullWidth onClick={handleCreateInvite} disabled={createInvite.isPending}>
         <QrCode size={16} />
@@ -264,6 +303,42 @@ function ShareSection({ cardId, onClose }: { cardId: string; onClose: () => void
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function GroupMemberPicker({
+  groupId,
+  excludeUserId,
+  onPick,
+  disabled,
+}: {
+  groupId: string
+  excludeUserId?: string
+  onPick: (username: string) => void
+  disabled: boolean
+}) {
+  const { data: members, isLoading } = useGroupMembers(groupId)
+  const pickable = members?.filter((m) => m.user_id !== excludeUserId) ?? []
+
+  if (isLoading) return <p className="text-xs text-slate-400">Caricamento membri…</p>
+  if (pickable.length === 0) {
+    return <p className="text-xs text-slate-400">Nessun altro membro in questo gruppo.</p>
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {pickable.map((m) => (
+        <button
+          key={m.user_id}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(m.username)}
+          className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+        >
+          @{m.username}
+        </button>
+      ))}
     </div>
   )
 }
