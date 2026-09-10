@@ -1,0 +1,7 @@
+# Copia questo file in `.bws-token` (root del repo, già escluso da git) per
+# generare app/.env.local da Bitwarden Secrets Manager con
+# scripts/bws-env.sh, invece di copiare app/.env.example a mano. Richiede la
+# CLI `bws` (`cargo install bws`).
+BWS_ACCESS_TOKEN='<access token del machine account, da Bitwarden>'
+BWS_PROJECT_ID='<id del progetto "Fidelity-card" in Secrets Manager>'
+BWS_SERVER_URL='https://vault.bitwarden.eu'

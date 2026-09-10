@@ -5,6 +5,10 @@
 Thumbs.db
 *.swp
 
+# Bitwarden Secrets Manager access token (locale, mai committato) — vedi
+# scripts/bws-env.sh
+.bws-token
+
 .vscode/*
 !.vscode/extensions.json
 .idea

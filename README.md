@@ -49,6 +49,11 @@ cp .env.example .env.local   # inserire URL e anon key del progetto Supabase
 npm run dev
 ```
 
+In alternativa, se hai accesso al progetto Bitwarden Secrets Manager
+`Fidelity-card` (vedi `.bws-token.example` nella root del repo),
+`../scripts/bws-env.sh` genera `app/.env.local` al posto del passo manuale
+qui sopra.
+
 Guida completa passo-passo (creazione progetto Supabase, schema, test da
 smartphone): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#1-test-in-locale).
 
