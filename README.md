@@ -7,6 +7,22 @@ Progressive Web App per la gestione delle carte fedeltà: scansiona QR code e
 codici a barre con la fotocamera, salva le carte nel tuo account e condividile
 con altri utenti o con il tuo gruppo famiglia/coinquilini.
 
+Nasce da un'esigenza pratica (centralizzare le tessere fedeltà di famiglia
+invece di portarle tutte fisicamente in borsa) ed è anche un banco di prova
+per un'architettura interamente client-heavy: niente backend applicativo da
+scrivere né mantenere, autorizzazioni granulari (proprietario / condivisione
+individuale / condivisione di gruppo) espresse solo in SQL tramite Row Level
+Security di Postgres.
+
+## Demo live
+
+**[loyalty-cards-app.demo-v1.workers.dev](https://loyalty-cards-app.demo-v1.workers.dev)**
+
+È l'ambiente di produzione reale (stesso deploy automatico descritto sotto),
+non una build dimostrativa a parte: puoi registrare un account e provare da
+subito lo scanner (richiede fotocamera, quindi meglio da smartphone) e il
+flusso di condivisione registrando un secondo utente.
+
 ## Filosofia
 
 - **Client-heavy**: la decodifica dei codici avviene interamente nel browser
