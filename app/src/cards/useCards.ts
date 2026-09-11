@@ -73,3 +73,33 @@ export function useDeleteCard() {
     },
   })
 }
+
+function setCardHidden(queryClient: ReturnType<typeof useQueryClient>, cardId: string, hidden: boolean) {
+  queryClient.setQueryData<AccessibleCard[]>(CARDS_KEY, (current) =>
+    current?.map((c) => (c.id === cardId ? { ...c, is_hidden: hidden } : c)),
+  )
+}
+
+export function useHideCard() {
+  const { session } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cardId: string) => {
+      if (!session) throw new Error('Non autenticato')
+      return api.hideCard(session.user.id, cardId)
+    },
+    onSuccess: (_data, cardId) => setCardHidden(queryClient, cardId, true),
+  })
+}
+
+export function useUnhideCard() {
+  const { session } = useAuth()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cardId: string) => {
+      if (!session) throw new Error('Non autenticato')
+      return api.unhideCard(session.user.id, cardId)
+    },
+    onSuccess: (_data, cardId) => setCardHidden(queryClient, cardId, false),
+  })
+}

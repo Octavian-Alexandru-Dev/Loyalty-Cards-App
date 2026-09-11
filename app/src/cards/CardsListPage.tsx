@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, ScanLine, CreditCard, List, LayoutGrid } from 'lucide-react'
+import { Plus, Search, ScanLine, CreditCard, List, LayoutGrid, ChevronDown, ChevronUp, EyeOff } from 'lucide-react'
 import {
   DndContext,
   KeyboardSensor,
@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useCards } from './useCards'
+import { useCards, useHideCard, useUnhideCard } from './useCards'
 import { useCardOrder } from './useCardOrder'
 import { CardListItem } from './CardListItem'
 import { CardGridItem } from './CardGridItem'
@@ -30,7 +30,15 @@ import { CARD_CATEGORIES, type AccessibleCard } from '../types'
 
 type ViewMode = 'list' | 'grid'
 
-function SortableCard({ card, view }: { card: AccessibleCard; view: ViewMode }) {
+function SortableCard({
+  card,
+  view,
+  onToggleHidden,
+}: {
+  card: AccessibleCard
+  view: ViewMode
+  onToggleHidden: (card: AccessibleCard) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -44,9 +52,9 @@ function SortableCard({ card, view }: { card: AccessibleCard; view: ViewMode }) 
   return (
     <div ref={setNodeRef} style={style}>
       {view === 'grid' ? (
-        <CardGridItem card={card} dragHandle={dragHandle} />
+        <CardGridItem card={card} dragHandle={dragHandle} onToggleHidden={() => onToggleHidden(card)} />
       ) : (
-        <CardListItem card={card} dragHandle={dragHandle} />
+        <CardListItem card={card} dragHandle={dragHandle} onToggleHidden={() => onToggleHidden(card)} />
       )}
     </div>
   )
@@ -58,24 +66,38 @@ export default function CardsListPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string | null>(null)
   const [view, setView] = useLocalStorageState<ViewMode>('loyalty-cards:view-mode', 'list')
+  const [showHidden, setShowHidden] = useState(false)
+  const hideCard = useHideCard()
+  const unhideCard = useUnhideCard()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  const visibleCards = useMemo(() => orderedCards.filter((c) => !c.is_hidden), [orderedCards])
+  const hiddenCards = useMemo(() => orderedCards.filter((c) => c.is_hidden), [orderedCards])
+
   const filtered = useMemo(() => {
-    return orderedCards.filter((c) => {
+    return visibleCards.filter((c) => {
       const matchesSearch = c.label.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = !category || c.category === category
       return matchesSearch && matchesCategory
     })
-  }, [orderedCards, search, category])
+  }, [visibleCards, search, category])
 
   const categoriesInUse = useMemo(
-    () => CARD_CATEGORIES.filter((cat) => cards?.some((c) => c.category === cat)),
-    [cards],
+    () => CARD_CATEGORIES.filter((cat) => visibleCards.some((c) => c.category === cat)),
+    [visibleCards],
   )
+
+  function handleToggleHidden(card: AccessibleCard) {
+    if (card.is_hidden) {
+      unhideCard.mutate(card.id)
+    } else {
+      hideCard.mutate(card.id)
+    }
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -168,12 +190,14 @@ export default function CardsListPage() {
       {!isLoading && !isError && filtered.length === 0 && (
         <EmptyState
           icon={CreditCard}
-          title={cards?.length ? 'Nessuna carta trovata' : 'Nessuna carta ancora'}
+          title={visibleCards.length ? 'Nessuna carta trovata' : 'Nessuna carta ancora'}
           description={
-            cards?.length ? 'Prova a modificare la ricerca o il filtro.' : 'Scansiona la prima carta fedeltà per iniziare.'
+            visibleCards.length
+              ? 'Prova a modificare la ricerca o il filtro.'
+              : 'Scansiona la prima carta fedeltà per iniziare.'
           }
           action={
-            !cards?.length && (
+            !visibleCards.length && (
               <Link to="/scan">
                 <Button>
                   <ScanLine size={18} />
@@ -193,11 +217,38 @@ export default function CardsListPage() {
           >
             <div className={view === 'grid' ? 'grid grid-cols-2 gap-3 pb-4' : 'flex flex-col gap-2 pb-4'}>
               {filtered.map((card) => (
-                <SortableCard key={card.id} card={card} view={view} />
+                <SortableCard key={card.id} card={card} view={view} onToggleHidden={handleToggleHidden} />
               ))}
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {hiddenCards.length > 0 && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            className="flex w-full items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-600"
+          >
+            <span className="flex items-center gap-2">
+              <EyeOff size={16} />
+              Carte nascoste ({hiddenCards.length})
+            </span>
+            {showHidden ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showHidden && (
+            <div className={`mt-3 ${view === 'grid' ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-2'}`}>
+              {hiddenCards.map((card) =>
+                view === 'grid' ? (
+                  <CardGridItem key={card.id} card={card} onToggleHidden={() => handleToggleHidden(card)} />
+                ) : (
+                  <CardListItem key={card.id} card={card} onToggleHidden={() => handleToggleHidden(card)} />
+                ),
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
