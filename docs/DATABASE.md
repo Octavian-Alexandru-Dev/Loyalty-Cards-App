@@ -48,6 +48,15 @@ Una riga ogni volta che qualcuno che **non** è il proprietario apre la
 schermata "usa carta" di una carta condivisa con lui. Il proprietario può
 leggere il log delle proprie carte.
 
+### `hidden_cards`
+Riga = "questo utente ha nascosto questa carta dalla propria lista". Serve a
+chi riceve una carta condivisa (direttamente o tramite un gruppo) per
+toglierla dalla propria schermata senza revocare la condivisione: è una
+preferenza di chi guarda, non un'azione su `card_shares`, quindi non
+richiede né modifica permessi di condivisione. Chiave primaria composta
+`(user_id, card_id)`, RLS limitata alle proprie righe. La vista
+`accessible_cards` espone il flag risultante come `is_hidden`.
+
 ### Auto-eliminazione dell'account
 Non è una tabella, ma la funzione `delete_own_account()`: elimina la riga
 dell'utente corrente in `auth.users`. Grazie a `on delete cascade` su tutte
@@ -73,6 +82,7 @@ Riassunto delle policy (vedi la migration per il SQL esatto):
 | `card_shares` | owner della carta, chi condivide, chi riceve | chi condivide, se è owner della carta o ha permesso `reshare` su di essa |
 | `share_invites` | chi lo ha creato | chi ha permesso di condividere la carta; il redeem passa solo dalla funzione dedicata |
 | `card_usage_log` | owner della carta, chi ha generato la riga | chiunque abbia accesso in lettura alla carta (registra il proprio utilizzo) |
+| `hidden_cards` | solo il proprio utente | solo il proprio utente |
 
 Nessuna tabella è leggibile o scrivibile senza autenticazione: `RLS` è
 abilitata ovunque e non esiste alcuna policy per il ruolo `anon` sui dati

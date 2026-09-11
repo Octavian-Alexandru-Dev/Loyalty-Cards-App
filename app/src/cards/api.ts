@@ -47,3 +47,17 @@ export async function logCardUsage(cardId: string, userId: string) {
   // Best-effort: se fallisce (es. offline) non blocca la visualizzazione della carta.
   await supabase.from('card_usage_log').insert({ card_id: cardId, used_by: userId }).select().maybeSingle()
 }
+
+export async function hideCard(userId: string, cardId: string) {
+  const { error } = await supabase.from('hidden_cards').insert({ user_id: userId, card_id: cardId })
+  if (error) throw error
+}
+
+export async function unhideCard(userId: string, cardId: string) {
+  const { error } = await supabase
+    .from('hidden_cards')
+    .delete()
+    .eq('user_id', userId)
+    .eq('card_id', cardId)
+  if (error) throw error
+}

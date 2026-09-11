@@ -40,6 +40,8 @@ export interface AccessibleCard extends Card {
   access: 'owner' | 'view' | 'reshare'
   /** Presente solo se la carta è condivisa (non è dell'utente corrente). */
   shared_by_username?: string
+  /** true se l'utente corrente ha nascosto questa carta condivisa dalla propria lista. */
+  is_hidden: boolean
 }
 
 export interface Group {

@@ -37,6 +37,9 @@ Questo documento fissa cosa è **dentro** lo scope della v1 e cosa è
 - [x] Revoca della condivisione (dal lato di chi condivide o di chi riceve)
 - [x] Log di utilizzo: il proprietario di una carta vede chi, tra le persone
       con cui l'ha condivisa, l'ha aperta e quando
+- [x] Chi riceve una carta condivisa (da un utente o da un gruppo) può
+      nasconderla dalla propria lista senza doverla revocare; resta
+      recuperabile in qualsiasi momento dalla sezione "Carte nascoste"
 
 ## Incluso — Account
 

@@ -21,6 +21,7 @@ function makeCard(id: string): AccessibleCard {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     access: 'owner',
+    is_hidden: false,
   }
 }
 
