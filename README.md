@@ -3,76 +3,74 @@
 [![CI](https://github.com/octavian-alexandru-dev/loyalty-cards-app/actions/workflows/ci.yml/badge.svg)](https://github.com/octavian-alexandru-dev/loyalty-cards-app/actions/workflows/ci.yml)
 [![Deploy](https://github.com/octavian-alexandru-dev/loyalty-cards-app/actions/workflows/deploy.yml/badge.svg)](https://github.com/octavian-alexandru-dev/loyalty-cards-app/actions/workflows/deploy.yml)
 
-A Progressive Web App for managing loyalty cards: scan QR codes and barcodes
-with your camera, save the cards to your account and share them with other
-users or with your family/flatmates group.
+A web app to keep all your loyalty cards in one place. You scan the QR code
+or barcode with your phone camera, the card gets saved to your account, and
+you can share it with other people or with your family or flatmates group.
 
-It grew out of a practical need (keeping the family's loyalty cards in one
-place instead of carrying them all around) and is also a testbed for a fully
-client-heavy architecture: no application backend to write or maintain, with
-fine-grained permissions (owner / individual sharing / group sharing)
-expressed entirely in SQL through Postgres Row Level Security.
+I built it because I was tired of carrying a pile of loyalty cards around, and
+I wanted the whole family to have them on their phones. It was also a chance
+to try an app with no backend of its own. All the logic about who can see
+which card lives in the database, written as Postgres Row Level Security
+policies, so there's no server code to write or maintain.
 
 ## Live demo
 
-**[loyalty-cards-app.digital-menu.workers.dev](https://loyalty-cards-app.digital-menu.workers.dev/)**
+You can try it at **[loyalty-cards-app.demo-v1.workers.dev](https://loyalty-cards-app.demo-v1.workers.dev)**
 
-This is the real production environment (the same automated deploy described
-below), not a separate demo build: you can sign up and immediately try the
-scanner (it needs a camera, so a smartphone works best) and the sharing flow
-by registering a second user.
+It's the actual production app, deployed automatically like everything else
+described below. Sign up, try the scanner from your phone since it needs a
+camera, and register a second user if you want to test sharing.
 
-## Philosophy
+## How it works
 
-- **Client-heavy**: codes are decoded entirely in the browser (no
-  image-processing server). Only the decoded value (text + format) is stored
-  in the database, never the scanned image.
-- **Zero cost**: the stack is designed to stay within the free tiers of
-  Supabase and a static host (Cloudflare Workers).
-- **Installable PWA**: manifest + service worker; cards that have already
-  been synced work offline.
+- Barcodes and QR codes are decoded in the browser, so there's no server
+  processing images. The database only stores the decoded text and its
+  format, never the photo.
+- Everything runs on free tiers, Supabase for the database and auth and
+  Cloudflare Workers for hosting.
+- It's an installable PWA and cards you've already synced keep working
+  offline.
 
-Full documentation (currently in Italian):
+The docs folder has more details, written in Italian for now.
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — tech stack and design decisions
-- [`docs/DATABASE.md`](docs/DATABASE.md) — data schema and security rules (RLS)
-- [`docs/FEATURES.md`](docs/FEATURES.md) — functional scope (what's included and what's not)
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — how to put the app online at zero cost
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) covers the stack and the design choices
+- [`docs/DATABASE.md`](docs/DATABASE.md) covers the schema and the RLS policies
+- [`docs/FEATURES.md`](docs/FEATURES.md) lists what the app does and what it doesn't
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) explains how to host it for free
 
-## Local development
+## Running it locally
 
 ```bash
 cd app
 npm install
-cp .env.example .env.local   # fill in your Supabase project URL and anon key
+cp .env.example .env.local   # add your Supabase URL and anon key
 npm run dev
 ```
 
-Alternatively, if you have access to the `Fidelity-card` Bitwarden Secrets
-Manager project (see `.bws-token.example` in the repo root),
-`../scripts/bws-env.sh` generates `app/.env.local` instead of the manual step
-above.
+If you have access to the `Fidelity-card` project on Bitwarden Secrets
+Manager you can skip the manual `.env.local` step and run
+`../scripts/bws-env.sh` instead. There's an example token file in
+`.bws-token.example`.
 
-Full step-by-step guide (creating the Supabase project, schema, testing from
-a smartphone): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#1-test-in-locale).
+For a full walkthrough, from creating the Supabase project to testing on your
+phone, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#1-test-in-locale).
 
-## Production deploy
+## Deploying
 
-Supabase backend + Cloudflare Workers hosting, with automatic releases via
-GitHub Actions on every push to `main`. Full guide:
+The backend is on Supabase and the frontend on Cloudflare Workers. Every push
+to `main` gets deployed by GitHub Actions. The steps to set it up are in
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#2-ambiente-cloud-di-produzione-costo-zero).
 
-## Code quality
+## Checks
 
 ```bash
 cd app
-npm run lint       # oxlint
-npm run typecheck  # tsc --noEmit
-npm run test       # vitest
-npm run build      # production build
+npm run lint
+npm run typecheck
+npm run test
+npm run build
 ```
 
-The same checks run automatically on every push/PR
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) and, with the real
-keys, before every deploy
-([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)).
+CI runs the same commands on every push and pull request
+with [`ci.yml`](.github/workflows/ci.yml), and runs them again with the real
+keys before each deploy with [`deploy.yml`](.github/workflows/deploy.yml).
