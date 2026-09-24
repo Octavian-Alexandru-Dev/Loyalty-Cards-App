@@ -15,7 +15,7 @@ expressed entirely in SQL through Postgres Row Level Security.
 
 ## Live demo
 
-**[loyalty-cards-app.demo-v1.workers.dev](https://loyalty-cards-app.demo-v1.workers.dev)**
+**[loyalty-cards-app.digital-menu.workers.dev](https://loyalty-cards-app.digital-menu.workers.dev/)**
 
 This is the real production environment (the same automated deploy described
 below), not a separate demo build: you can sign up and immediately try the
